@@ -1,92 +1,91 @@
-export default function InfoPanel({ module, result, explanation }) {
+import { useEffect, useState } from "react"
+import { explainWithAi, hasAiKey } from "../api/ai.js"
+
+export default function InfoPanel({ scenario, values, result }) {
+	const [explanation, setExplanation] = useState("")
+	const [source, setSource] = useState("offline")
+	const [loading, setLoading] = useState(false)
+
+	useEffect(() => {
+		if (result.error) {
+			setExplanation("")
+			return
+		}
+		setExplanation(scenario.explain(values, result))
+		setSource("offline")
+	}, [scenario, values, result])
+
+	const askAi = async () => {
+		setLoading(true)
+		const response = await explainWithAi(scenario, values, result)
+		setExplanation(response.text)
+		setSource(response.source)
+		setLoading(false)
+	}
+
 	return (
-		<div className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-			<h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">📊 Info Panel</h3>
-			{!result && <p className="text-sm text-slate-500">Điền các giá trị ở trên để xem thông tin chi tiết.</p>}
+		<div className="space-y-4">
+			<section className="card space-y-3">
+				<h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Kết quả</h2>
+				{result.error ? (
+					<p className="text-sm text-red-500">{result.error}</p>
+				) : (
+					<dl className="grid gap-2 sm:grid-cols-2">
+						{result.metrics.map((item) => (
+							<div
+								key={item.label}
+								className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800/60"
+							>
+								<dt className="text-xs text-slate-500 dark:text-slate-400">{item.label}</dt>
+								<dd className="text-base font-semibold text-slate-800 dark:text-slate-100">
+									{item.value}
+									{item.unit ? <span className="ml-1 text-xs font-normal text-slate-400">{item.unit}</span> : null}
+								</dd>
+								{item.hint ? <p className="text-[11px] text-slate-400">{item.hint}</p> : null}
+							</div>
+						))}
+					</dl>
+				)}
+			</section>
 
-			{result && module === "chemistry" && (
-				<dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-					<dt className="text-slate-500">Phương trình</dt>
-					<dd className="text-slate-100">{result.balanced}</dd>
-					<dt className="text-slate-500">Sản phẩm</dt>
-					<dd className="text-slate-100">{result.product}</dd>
-					<dt className="text-slate-500">Trạng thái</dt>
-					<dd className="text-slate-100">{result.state}</dd>
-					<dt className="text-slate-500">An toàn</dt>
-					<dd className="text-slate-100">{result.danger}</dd>
-					<dt className="text-slate-500">Ứng dụng</dt>
-					<dd className="text-slate-100">{result.applications}</dd>
-				</dl>
-			)}
+			<section className="card space-y-2">
+				<div className="flex items-center justify-between gap-2">
+					<h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Giải thích</h2>
+					<div className="flex items-center gap-2">
+						<span className="chip">{source === "ai" ? "AI" : "Lời giải sẵn"}</span>
+						{hasAiKey ? (
+							<button type="button" className="btn px-2 py-1 text-xs" onClick={askAi} disabled={loading || !!result.error}>
+								{loading ? "Đang hỏi AI..." : "✨ Hỏi AI"}
+							</button>
+						) : null}
+					</div>
+				</div>
+				<p className="whitespace-pre-line text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+					{explanation || "Chỉnh thông số hợp lệ để xem lời giải thích."}
+				</p>
+				{!hasAiKey ? (
+					<p className="text-[11px] text-slate-400">
+						Thêm VITE_CLAUDE_API_KEY vào file .env để bật phần giải thích bằng AI.
+					</p>
+				) : null}
+			</section>
 
-			{result && module === "physics" && (
-				<dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-					{result.type === "newton" && (
-						<>
-							<dt className="text-slate-500">Gia tốc a</dt>
-							<dd className="text-slate-100">{result.acceleration.toFixed(2)} m/s²</dd>
-						</>
-					)}
-					{result.type === "freefall" && (
-						<>
-							<dt className="text-slate-500">Thời gian rơi</dt>
-							<dd className="text-slate-100">{result.time.toFixed(2)} s</dd>
-							<dt className="text-slate-500">Vận tốc chạm đất</dt>
-							<dd className="text-slate-100">{result.finalVelocity.toFixed(2)} m/s</dd>
-						</>
-					)}
-					{result.type === "pendulum" && (
-						<>
-							<dt className="text-slate-500">Chu kỳ T</dt>
-							<dd className="text-slate-100">{result.period.toFixed(2)} s</dd>
-						</>
-					)}
-				</dl>
-			)}
-
-			{result && module === "math" && (
-				<dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-					{result.type === "quadratic" && (
-						<>
-							<dt className="text-slate-500">Đỉnh</dt>
-							<dd className="text-slate-100">
-								{result.vertex ? `(${result.vertex.x.toFixed(2)}, ${result.vertex.y.toFixed(2)})` : "—"}
-							</dd>
-							<dt className="text-slate-500">Nghiệm</dt>
-							<dd className="text-slate-100">{result.roots.length ? result.roots.map((r) => r.toFixed(2)).join(", ") : "Vô nghiệm thực"}</dd>
-							<dt className="text-slate-500">Giao Oy</dt>
-							<dd className="text-slate-100">{result.yIntercept}</dd>
-						</>
-					)}
-					{result.type === "triangle" && (
-						<>
-							<dt className="text-slate-500">Hợp lệ</dt>
-							<dd className="text-slate-100">{result.isValid ? "Có" : "Không"}</dd>
-							{result.isValid && (
-								<>
-									<dt className="text-slate-500">Diện tích</dt>
-									<dd className="text-slate-100">{result.area.toFixed(2)}</dd>
-								</>
-							)}
-						</>
-					)}
-					{result.type === "coin" && (
-						<>
-							<dt className="text-slate-500">Số lần ngửa</dt>
-							<dd className="text-slate-100">
-								{result.heads} / {result.flips}
-							</dd>
-							<dt className="text-slate-500">Tỉ lệ</dt>
-							<dd className="text-slate-100">{(result.ratio * 100).toFixed(1)}%</dd>
-						</>
-					)}
-				</dl>
-			)}
-
-			<div className="mt-2 rounded-md border border-slate-800 bg-slate-950 p-3 text-sm text-slate-300">
-				<span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">🤖 Giải thích AI</span>
-				{explanation || "Đang tạo giải thích…"}
-			</div>
+			<section className="card space-y-2">
+				<h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Lý thuyết</h2>
+				<p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{scenario.theory}</p>
+				{scenario.safety ? (
+					<p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+						⚠️ {scenario.safety}
+					</p>
+				) : null}
+				<div className="flex flex-wrap gap-1.5 pt-1">
+					{(scenario.tags ?? []).map((tag) => (
+						<span key={tag} className="chip">
+							#{tag}
+						</span>
+					))}
+				</div>
+			</section>
 		</div>
 	)
 }
