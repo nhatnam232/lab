@@ -74,7 +74,7 @@ function parseHash(hashString) {
 
 function buildHash(state) {
 	return state.mode === "chem"
-		? buildChemShare(state.chemMix)
+		? buildChemShare(state.chemMix, state.selectedReactionId)
 		: buildMathShare(state.mathBlocks)
 }
 
@@ -107,13 +107,17 @@ export function useLabState() {
 		}
 		const id = setTimeout(() => {
 			try {
-				window.history.replaceState(null, "", `#${buildHash({ mode, chemMix, mathBlocks })}`)
+				window.history.replaceState(
+					null,
+					"",
+					`#${buildHash({ mode, chemMix, mathBlocks, selectedReactionId })}`,
+				)
 			} catch {
 				/* bo qua */
 			}
 		}, 400)
 		return () => clearTimeout(id)
-	}, [mode, chemMix, mathBlocks])
+	}, [mode, chemMix, mathBlocks, selectedReactionId])
 
 	/* Thu dong (hash -> state) de dan link moi vao tab dang mo van co tac dung. */
 	useEffect(() => {

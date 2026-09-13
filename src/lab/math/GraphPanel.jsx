@@ -20,6 +20,28 @@ function nearestIndex(points, x) {
 }
 
 /**
+ * Tach day diem thanh nhieu doan polyline tai khoang gian doan (1/x tai x=0):
+ * khi hai diem lien tiep cach xa nhau qua 70% chieu cao vung ve, coi nhu
+ * duong cong bi dut — tranh net thang xuyen qua tiem can.
+ */
+function toSegments(points, xMap, yMap, plotHeight) {
+	const jump = plotHeight * 0.7
+	const segments = []
+	let current = []
+	for (const point of points) {
+		if (current.length && Math.abs(yMap(point.y) - yMap(current[current.length - 1].y)) > jump) {
+			segments.push(current)
+			current = []
+		}
+		current.push(point)
+	}
+	if (current.length) segments.push(current)
+	return segments
+		.filter((segment) => segment.length > 1)
+		.map((segment) => segment.map((point) => `${xMap(point.x).toFixed(1)},${yMap(point.y).toFixed(1)}`).join(" "))
+}
+
+/**
  * Do thi ham tong: truc + luoi + diem doc hover (chuot va ban phim),
  * con tro chay quet theo x, bang gia tri tai vi tri con tro.
  */
@@ -67,28 +89,32 @@ export default function GraphPanel({ blocks, domain, playing, setPlaying, theme 
 	const toPx = (x) => PAD + ((x - domain[0]) / xSpan) * (W - PAD * 2)
 	const toPy = (y) => H - PAD - ((y - yScale.min) / (yScale.max - yScale.min || 1)) * (H - PAD * 2)
 
-	const mainPath = useMemo(
-		() => main.map((point) => `${toPx(point.x).toFixed(1)},${toPy(point.y).toFixed(1)}`).join(" "),
+	const mainSegments = useMemo(
+		() => toSegments(main, toPx, toPy, H - PAD * 2),
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[main, yScale, domain],
 	)
-	const derivativePath = useMemo(
-		() =>
-			derivative
-				.map((point) => `${toPx(point.x).toFixed(1)},${toPy(point.y).toFixed(1)}`)
-				.join(" "),
+	const derivativeSegments = useMemo(
+		() => toSegments(derivative, toPx, toPy, H - PAD * 2),
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[derivative, yScale, domain],
 	)
 
-	/* Con tro chay: vong rAF rieng, clamp delta de tab an ko nhay; chi chay khi playing. */
+	/* Con tro chay: vong rAF rieng, clamp delta de tab an ko nhay; chi chay khi playing.
+	   Tich luy thoi gian va cap nhat state ~12 lan/giay de giam re-render. */
 	useEffect(() => {
 		if (!playing || reducedMotion || !blocks.length) return
 		let last = performance.now()
+		let acc = 0
 		let raf = requestAnimationFrame(function step(now) {
 			const delta = Math.min(0.1, (now - last) / 1000)
 			last = now
-			setT((prev) => (prev + delta / SWEEP_SECONDS) % 1)
+			acc += delta
+			if (acc >= 0.08) {
+				const advance = acc
+				acc = 0
+				setT((prev) => (prev + advance / SWEEP_SECONDS) % 1)
+			}
 			raf = requestAnimationFrame(step)
 		})
 		return () => cancelAnimationFrame(raf)
@@ -242,27 +268,31 @@ export default function GraphPanel({ blocks, domain, playing, setPlaying, theme 
 							</text>
 						))}
 					</g>
-					{/* dao ham y' — net manh mau hong */}
-					{showDerivative && derivativePath ? (
+					{/* dao ham y' — net manh mau hong, tach doan tai khoang gian doan */}
+					{showDerivative
+						? derivativeSegments.map((points, index) => (
+								<polyline
+									key={`d-${index}`}
+									points={points}
+									fill="none"
+									stroke={DERIVATIVE_COLOR}
+									strokeWidth={1.5}
+									strokeLinejoin="round"
+								/>
+							))
+						: null}
+					{/* ham tong — nhieu doan, dut tai tiem can (1/x) */}
+					{mainSegments.map((points, index) => (
 						<polyline
-							points={derivativePath}
-							fill="none"
-							stroke={DERIVATIVE_COLOR}
-							strokeWidth={1.5}
-							strokeLinejoin="round"
-						/>
-					) : null}
-					{/* ham tong */}
-					{mainPath ? (
-						<polyline
-							points={mainPath}
+							key={`m-${index}`}
+							points={points}
 							fill="none"
 							stroke={MAIN_COLOR}
 							strokeWidth={2.5}
 							strokeLinejoin="round"
 							strokeLinecap="round"
 						/>
-					) : null}
+					))}
 					{/* con tro chay quet x-min -> x-max khoang 8 giay */}
 					<line x1={cursorPx} y1={PAD} x2={cursorPx} y2={H - PAD} stroke={CURSOR_COLOR} strokeWidth={1.5} />
 					{cursorDotY === null ? null : (
@@ -311,8 +341,8 @@ export default function GraphPanel({ blocks, domain, playing, setPlaying, theme 
 				) : null}
 			</div>
 
-			{/* Bang gia tri tai con tro */}
-			<div aria-live="polite" className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+			{/* Bang gia tri tai con tro — khong aria-live (cap nhat lien tuc khi con tro chay) */}
+			<div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
 				<div className="overflow-x-auto">
 					<table className="w-full text-sm">
 						<caption className="sr-only">Giá trị từng khối tại vị trí con trỏ</caption>

@@ -19,7 +19,7 @@ export default function CreditsModal({ onClose }) {
 							className="flex items-center gap-3 rounded-xl border border-slate-200 p-2 dark:border-slate-800"
 						>
 							<img
-								src={`/substances/${item.file}`}
+								src={`${import.meta.env.BASE_URL}substances/${item.file}`}
 								alt={substance?.name ?? item.id}
 								loading="lazy"
 								className="h-12 w-12 shrink-0 rounded-lg object-cover"

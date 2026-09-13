@@ -10,11 +10,12 @@ const MAX_BLOCKS = 12
 
 function NumberDraft({ value, min, max, step, label, onCommit }) {
 	const [draft, setDraft] = useState(() => String(value))
+	const focusedRef = useRef(false)
 
-	/* Dong bo lai draft khi gia tri thay doi tu ben ngoai (random, slider, hash...) */
+	/* Chi dong bo lai draft khi dang khong focus (slider, random, hash...) —
+	   khong ghi de chuoi dang go khi gia tri commit bi kẹp ve bien. */
 	useEffect(() => {
-		if (toNumber(draft, Number.NaN) !== value) setDraft(String(value))
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		if (!focusedRef.current) setDraft(String(value))
 	}, [value])
 
 	const handleChange = (raw) => {
@@ -33,10 +34,24 @@ function NumberDraft({ value, min, max, step, label, onCommit }) {
 			step={step}
 			aria-label={label}
 			onChange={(event) => handleChange(event.target.value)}
-			onBlur={() => setDraft(String(value))}
+			onFocus={() => {
+				focusedRef.current = true
+			}}
+			onBlur={() => {
+				focusedRef.current = false
+				setDraft(String(value))
+			}}
 		/>
 	)
 }
+
+/* Bo dau tieng Viet de tim kiem khong dau. */
+const normalizeText = (text) =>
+	String(text ?? "")
+		.toLowerCase()
+		.normalize("NFD")
+		.replace(/[̀-ͯ]/g, "")
+		.replace(/đ/g, "d")
 
 /* ---------- mot hang tham so: ten + gia tri fmt + slider + o number ---------- */
 
@@ -156,12 +171,21 @@ export default function MathLab({ app }) {
 	} = app
 
 	const [copied, setCopied] = useState(false)
+	const [query, setQuery] = useState("")
 	const copyTimer = useRef(null)
 
 	/* Xoa timer flash khi tháo component */
 	useEffect(() => () => clearTimeout(copyTimer.current), [])
 
 	const full = mathBlocks.length >= MAX_BLOCKS
+
+	/* Loc palette khoi ham theo tu khoa khong dau. */
+	const needle = normalizeText(query).trim()
+	const visibleTypes = needle
+		? BLOCK_TYPES.filter((type) =>
+				normalizeText(`${type.name} ${type.label} ${type.description}`).includes(needle),
+			)
+		: BLOCK_TYPES
 
 	/* Random tham so moi khoi trong khoang hop le, lan luot theo buoc step */
 	const randomizeAll = () => {
@@ -212,8 +236,17 @@ export default function MathLab({ app }) {
 				<section className="card">
 					<h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Khối hàm</h2>
 					<p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Bấm khối để thêm vào công thức</p>
+					<input
+						type="search"
+						data-search
+						value={query}
+						placeholder="Tìm khối hàm (tên, mô tả…)"
+						aria-label="Tìm khối hàm theo tên hoặc mô tả"
+						onChange={(event) => setQuery(event.target.value)}
+						className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
+					/>
 					<div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-1">
-						{BLOCK_TYPES.map((type) => (
+						{visibleTypes.map((type) => (
 							<button
 								key={type.id}
 								type="button"

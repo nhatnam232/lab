@@ -66,7 +66,7 @@ export const BLOCK_TYPES = [
 		id: "recip",
 		label: "1/x",
 		name: "Nghịch đảo",
-		description: "Đường hypebol, gián đoạn tại x = 0.",
+		description: "Đường hyperbol, gián đoạn tại x = 0.",
 		params: [amplitude()],
 		fn: (p) => (x) => (Math.abs(x) < 1e-9 ? Number.NaN : p.a / x),
 		formula: (p) => `${p.a === 1 ? "" : p.a === -1 ? "−" : p.a}/x`,

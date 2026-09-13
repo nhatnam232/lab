@@ -213,11 +213,13 @@ export function analyzeMix(mix, selectedReactionId = null) {
 	}
 }
 
-/** Chuoi ta lien ket: #m=chem&mx=h2:2,o2:1 */
-export function buildChemShare(mix) {
+/** Chuoi ta lien ket: #m=chem&mx=h2:2,o2:1&r=<id phan ung dang chon> */
+export function buildChemShare(mix, reactionId = null) {
 	const clean = cleanMix(mix)
 	const parts = Object.entries(clean).map(([id, moles]) => `${id}:${moles}`)
-	return parts.length ? `m=chem&mx=${parts.join(",")}` : "m=chem"
+	let hash = parts.length ? `m=chem&mx=${parts.join(",")}` : "m=chem"
+	if (reactionId) hash += `&r=${reactionId}`
+	return hash
 }
 
 export function parseChemShare(params) {

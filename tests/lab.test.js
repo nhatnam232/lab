@@ -139,6 +139,10 @@ test("bestCandidate chon phan ung tien trien lon nhat, analyzeMix tong hop", () 
 test("share hash hoa loop tron", () => {
 	const hash = buildChemShare({ h2: 2, o2: 1 })
 	assert.equal(hash, "m=chem&mx=h2:2,o2:1")
+	assert.equal(
+		buildChemShare({ h2: 2, o2: 1 }, "burn-hydrogen"),
+		"m=chem&mx=h2:2,o2:1&r=burn-hydrogen",
+	)
 	const parsed = parseChemShare(new URLSearchParams(hash.replace(/^m=chem&/, "")))
 	assert.deepEqual(parsed, { h2: 2, o2: 1 })
 

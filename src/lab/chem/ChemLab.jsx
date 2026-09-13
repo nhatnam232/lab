@@ -66,7 +66,11 @@ function buildFrame(analysis, mix, theme, byId) {
 				: `Nhiệt: ${result.heat >= 0 ? "+" : "−"}${fmt(Math.abs(result.heat))} kJ (${result.heat >= 0 ? "tỏa" : "thu"} nhiệt)`,
 		)
 	} else if (sprites.length) {
-		hudLines.push("Chưa ghép đủ phản ứng — xem gợi ý bên dưới")
+		hudLines.push(
+			analysis.suggestions.length
+				? "Chưa ghép đủ phản ứng — xem gợi ý bên dưới"
+				: "Chưa có phản ứng với các chất này — thử thêm chất khác",
+		)
 	} else {
 		hudLines.push("Cốc trống")
 	}
@@ -339,6 +343,24 @@ function ProgressChart({ seriesList }) {
 		setHoverIndex(best)
 	}
 
+	/* Ban phim: mui ten di chuyen diem doc, Home/End nhay hai dau. */
+	const handleKeyDown = (event) => {
+		if (!["ArrowLeft", "ArrowRight", "Home", "End", "Escape"].includes(event.key)) return
+		event.preventDefault()
+		if (event.key === "Escape") {
+			setHoverIndex(null)
+			return
+		}
+		const current = hoverIndex ?? Math.floor(data.length / 2)
+		const next =
+			event.key === "Home"
+				? 0
+				: event.key === "End"
+					? data.length - 1
+					: clamp(current + (event.key === "ArrowRight" ? 1 : -1), 0, data.length - 1)
+		setHoverIndex(next)
+	}
+
 	return (
 		<section className="card" aria-label="Đồ thị tiến trình phản ứng">
 			<div className="flex flex-wrap items-center justify-between gap-2">
@@ -375,11 +397,13 @@ function ProgressChart({ seriesList }) {
 				<svg
 					viewBox={`0 0 ${CHART_W} ${CHART_H}`}
 					role="img"
-					aria-label={`${serie.label}: ${serie.yLabel} theo ${serie.xLabel}, từ ${fmt(minY)} đến ${fmt(maxY)}`}
-					className="block w-full touch-none select-none rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+					tabIndex={0}
+					aria-label={`${serie.label}: ${serie.yLabel} theo ${serie.xLabel}, từ ${fmt(minY)} đến ${fmt(maxY)}; dùng mũi tên trái/phải để đọc giá trị`}
+					className="block w-full touch-none select-none rounded-xl border border-slate-200 bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 dark:border-slate-800 dark:bg-slate-950"
 					onPointerMove={handlePointerMove}
 					onPointerLeave={() => setHoverIndex(null)}
 					onPointerCancel={() => setHoverIndex(null)}
+					onKeyDown={handleKeyDown}
 				>
 					{/* luoi nen tinh kem */}
 					{[0, 0.5, 1].map((ratio) => (
@@ -499,6 +523,7 @@ export default function ChemLab({ app }) {
 	const timeRef = useRef(0)
 	const playingRef = useRef(playing)
 	const frameRef = useRef(null)
+	const dirtyRef = useRef(true)
 	const copyTimer = useRef(null)
 
 	const catalog = useMemo(() => withImages(), [])
@@ -511,6 +536,12 @@ export default function ChemLab({ app }) {
 	frameRef.current = frame
 	playingRef.current = playing
 
+	/* Danh dau ve lai khi du lieu khung hinh doi — cho phep dung rAF ve that khi
+	   tam dung (playing=false) ma khong mat 60 lan ve/giay. */
+	useEffect(() => {
+		dirtyRef.current = true
+	}, [frame, playing])
+
 	/* Vong rAF: clamp delta de tab an khong nhay, chi cong thoi gian khi playing,
 	   dung yen o t=0 neu nguoi dung bat prefers-reduced-motion nhung van ve. */
 	useEffect(() => {
@@ -521,6 +552,7 @@ export default function ChemLab({ app }) {
 			typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
 		const onReset = () => {
 			timeRef.current = 0
+			dirtyRef.current = true
 		}
 		window.addEventListener("scilab:reset-time", onReset)
 		let raf = 0
@@ -529,11 +561,14 @@ export default function ChemLab({ app }) {
 			const delta = Math.min(0.1, (now - last) / 1000)
 			last = now
 			if (playingRef.current && !reduced) timeRef.current += delta
-			scene.setFrame({
-				...frameRef.current,
-				t: timeRef.current,
-				progress: (timeRef.current % LOOP_SECONDS) / LOOP_SECONDS,
-			})
+			if (playingRef.current || dirtyRef.current) {
+				dirtyRef.current = false
+				scene.setFrame({
+					...frameRef.current,
+					t: timeRef.current,
+					progress: (timeRef.current % LOOP_SECONDS) / LOOP_SECONDS,
+				})
+			}
 			raf = requestAnimationFrame(step)
 		}
 		raf = requestAnimationFrame(step)
@@ -746,7 +781,7 @@ export default function ChemLab({ app }) {
 					<h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">⚗️ Phản ứng</h2>
 					{mixEntries.length === 0 ? (
 						<p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-							Chọn chất từ bảng bên trái để bắt đầu ↑
+							Chọn chất từ bảng chất để bắt đầu — bấm “+” trên một chất để cho vào cốc.
 						</p>
 					) : (
 						<div className="mt-2 space-y-3">
@@ -856,15 +891,15 @@ export default function ChemLab({ app }) {
 					)}
 				</section>
 
-				{/* Ket qua chi tiet */}
+				{/* Ket qua chi tiet — chi luoi metric la aria-live, khong bao tram ca cot */}
 				{result ? (
-					<div className="space-y-4" aria-live="polite">
+					<div className="space-y-4">
 						<section className="card" aria-label="Kết quả phản ứng">
 							<h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">📊 Kết quả</h2>
 							<p className="mt-1 break-words font-mono text-lg font-semibold text-sky-600 dark:text-sky-300">
 								{result.equation}
 							</p>
-							<div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+							<div aria-live="polite" className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 								<Metric
 									label="Chất giới hạn"
 									value={result.totalInput === 0 ? "—" : getSubstance(result.limiting)?.name ?? "—"}

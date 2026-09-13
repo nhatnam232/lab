@@ -15,14 +15,14 @@ export const CATEGORIES = [
  * va anh chup that (tu Wikimedia Commons, chi tiet giay phep trong imageCredits.json).
  */
 export const SUBSTANCES = [
-	{ id: "h2", formula: "H2", name: "Khối hydro", category: "khi", state: "gas", molarMass: 2.016, color: "#7dd3fc", description: "Khí nhẹ nhất, cháy trong oxi tạo nước." },
+	{ id: "h2", formula: "H2", name: "Khí hydro", category: "khi", state: "gas", molarMass: 2.016, color: "#7dd3fc", description: "Khí nhẹ nhất, cháy trong oxi tạo nước." },
 	{ id: "o2", formula: "O2", name: "Khí oxi", category: "khi", state: "gas", molarMass: 31.998, color: "#93c5fd", description: "Khí duy trì sự cháy và hô hấp." },
 	{ id: "cl2", formula: "Cl2", name: "Khí clo", category: "khi", state: "gas", molarMass: 70.906, color: "#a3e635", description: "Khí màu lục vàng, rất độc." },
 	{ id: "ch4", formula: "CH4", name: "Khí methane", category: "khi", state: "gas", molarMass: 16.043, color: "#c084fc", description: "Thành phần chính của khí thiên nhiên." },
 	{ id: "co2", formula: "CO2", name: "Khí cacbonic", category: "khi", state: "gas", molarMass: 44.009, color: "#94a3b8", description: "Sản phẩm cháy, gây hiệu ứng nhà kính." },
 	{ id: "na", formula: "Na", name: "Natri", category: "kimLoai", state: "solid", molarMass: 22.99, color: "#e2e8f0", description: "Kim loại kiềm mềm, phản ứng mãnh liệt với nước." },
 	{ id: "fe", formula: "Fe", name: "Sắt", category: "kimLoai", state: "solid", molarMass: 55.845, color: "#78716c", description: "Kim loại phổ biến nhất, bị gỉ trong không khí ẩm." },
-	{ id: "zn", formula: "Zn", name: "Kẽm", category: "kimLoai", state: "solid", molarMass: 65.38, color: "#a1a1aa", description: "Kim loại xanh lục nhạt, tan trong axit tạo khí hydro." },
+	{ id: "zn", formula: "Zn", name: "Kẽm", category: "kimLoai", state: "solid", molarMass: 65.38, color: "#a1a1aa", description: "Kim loại xám xanh ánh kim, tan trong axit tạo khí hydro." },
 	{ id: "cu", formula: "Cu", name: "Đồng", category: "kimLoai", state: "solid", molarMass: 63.546, color: "#f59e0b", description: "Kim loại đỏ nâu, dẫn điện rất tốt." },
 	{ id: "mg", formula: "Mg", name: "Magie", category: "kimLoai", state: "solid", molarMass: 24.305, color: "#cbd5e1", description: "Kim loại nhẹ, cháy với ánh sáng trắng rực rỡ." },
 	{ id: "hcl", formula: "HCl", name: "Axit clohydric", category: "axit", state: "liquid", molarMass: 36.461, color: "#fde047", description: "Axit mạnh trong dạ dày và phòng thí nghiệm." },
@@ -49,7 +49,8 @@ export function withImages(substances = SUBSTANCES) {
 		const credit = creditsById.get(item.id)
 		return {
 			...item,
-			img: credit ? `/substances/${credit.file}` : null,
+			/* Theo base cua build (vite base "./") de anh khong 404 khi deploy subpath. */
+			img: credit ? `${import.meta.env.BASE_URL}substances/${credit.file}` : null,
 			credit: credit ?? null,
 		}
 	})
