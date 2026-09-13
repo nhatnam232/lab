@@ -1,73 +1,56 @@
-# 🧪 SciLab Playground
+# 🧪 SciLab Studio
 
-Phòng thí nghiệm mô phỏng **Hóa – Lý – Toán** chạy hoàn toàn trong trình duyệt: chọn thí nghiệm, kéo thanh thông số, xem mô phỏng động, đọc kết quả tính toán và lời giải thích.
+Tự tạo thí nghiệm ngay trong trình duyệt — **không có thí nghiệm đóng hộp**: bạn chọn chất, cộng các khối hàm số và xem mô phỏng diễn ra phía dưới.
 
-## Tính năng
+## Hai chế độ
 
-- **16 thí nghiệm** chia theo ba môn: 6 phản ứng hóa học (có chất giới hạn, khối lượng sản phẩm, nhiệt phản ứng), 7 bài vật lý (Newton, rơi tự do, ném xéo, con lắc, lò xo, Ohm, sóng cơ) và 6 bài toán (hàm bậc hai, hệ phương trình, tam giác, lượng giác, tăng trưởng hàm mũ, xác suất).
-- **Mô phỏng canvas** có phát/tạm dừng, tốc độ 0.25×–4×, làm lại và xuất ảnh PNG.
-- **Đồ thị SVG** nhiều chuỗi dữ liệu, xuất CSV để làm báo cáo.
-- **Tìm kiếm không dấu**, lọc theo môn, danh sách yêu thích.
-- **Chủ đề sáng/tối**, ghi nhận thông số vào localStorage và **chia sẻ bằng đường dẫn** `#s=<id>&<thông số>`.
-- **Giải thích tự động** cho mọi thí nghiệm; nếu cấu hình API key thì có thêm nút hỏi AI.
-- **Bộ test** kiểm chứng công thức và toàn bộ thí nghiệm ở giá trị mặc định lẫn hai biên.
+- **⚗️ Phòng thí nghiệm Hóa** — bảng 22 chất có **ảnh chụp thật** (kim loại, khí, axit, muối…). Chọn chất cho vào cốc, chỉnh số mol: hệ thống tự nhận các phản ứng khả thi từ cơ sở 10 phản ứng (tìm chất giới hạn, sản phẩm, chất dư, nhiệt phản ứng), gợi ý "còn thiếu chất nào" và giải **từng bước**. Mô phỏng canvas vẽ ảnh thật các chất trong cốc kèm hiệu ứng bọt khí, lửa, đổi màu.
+- **📐 Xây hàm số** — 13 khối hàm (sin, cos, x², x³, √x, |x|, 1/x, eˣ, ln x, chuông Gauss, sigmoit, hằng số, bậc nhất). Bấm để thêm vào công thức, mỗi khối có dấu **+/−** và tham số riêng: `y = ±f₁(x) ± f₂(x) ± …` cập nhật tức thì trên đồ thị. Đồ thị có crosshair đọc giá trị (chuột + bàn phím), con trỏ chạy động, đạo hàm, tích phân Simpson và bảng đóng góp của từng khối.
+
+## Tính năng chung
+
+- Phím tắt: `Space` chạy/dừng · `R` làm lại · `1`/`2` đổi chế độ · `/` tìm kiếm · `?` trợ giúp.
+- Chủ đề sáng/tối (nhớ lựa chọn, không nháy khi tải lại), tôn trọng `prefers-reduced-motion`.
+- Chia sẻ bằng đường dẫn: `#m=chem&mx=h2:2,o2:1` hoặc `#m=math&b=sin:-1:2,1,0.5;x2:1:1` — dán link vào tab đang mở vẫn áp dụng được.
+- Cấu hình tự lưu vào `localStorage` (khóa `scilab:studio:v3`) — không cần tài khoản, không backend.
+- Giải thích bằng AI (tùy chọn) khi cấu hình `VITE_CLAUDE_API_KEY`.
+- Accessibility: skip-link, focus-visible, aria-pressed/aria-live, đồ thị duyệt được bằng phím mũi tên.
+- Xuất CSV, xuất PNG mô phỏng, ErrorBoundary chống trắng trang.
+
+## Ảnh chất
+
+Ảnh chụp thật tải từ **Wikimedia Commons** theo giấy phép mở của từng tác giả — xem đầy đủ trong app (nút **📷 Ảnh** ở header).
 
 ## Chạy dự án
 
 ```bash
 npm install
-npm run dev      # mở http://localhost:5173
-npm test         # chạy bộ test (node:test)
-npm run build    # build ra dist/
-npm run preview  # xem thử bản build
+npm run dev      # http://localhost:5173
+npm test         # node:test — engine hóa học, composer hàm số, share/hash
+npm run build    # dist/
+npm run preview
 ```
-
-## Giải thích bằng AI (không bắt buộc)
-
-Sao chép `.env.example` thành `.env` và điền:
-
-```
-VITE_CLAUDE_API_KEY=...
-VITE_CLAUDE_API_URL=https://api.anthropic.com/v1/messages
-VITE_CLAUDE_MODEL=claude-3-5-haiku-latest
-```
-
-Khi không có key, ứng dụng vẫn hoạt động đầy đủ và dùng lời giải thích tính sẵn trong mã.
 
 ## Cấu trúc
 
 ```
 src/
-  lib/         utils.js (toán, định dạng, CSV, RNG), draw.js (bảng màu + hàm vẽ canvas)
-  scenarios/   chemistry.js, physics.js, math.js, index.js (registry + tìm kiếm)
-  state/       useAppState.js (thông số, chủ đề, yêu thích, share link)
-  components/  Sidebar, ControlPanel, CanvasStage, ChartPanel, InfoPanel
-  api/         ai.js (giải thích bằng AI, có phương án dự phòng)
-tests/         scenarios.test.js
+  lib/            utils.js (fmt vi-VN, prettyFormula, sampling), draw.js (palette canvas)
+  lab/chem/       substances.js (22 chất), reactions.js (10 phản ứng),
+                  engine.js (nhận diện + tính toán + từng bước), ChemLab.jsx, chemScene.js
+  lab/math/       blocks.js (13 khối hàm), composer.js (cộng hàm, đạo hàm, tích phân),
+                  MathLab.jsx, GraphPanel.jsx
+  state/          useLabState.js (2 chế độ, localStorage, share hash 2 chiều)
+  components/     Header, Modal, HelpModal, CreditsModal, ErrorBoundary
+public/substances/  ảnh chất + manifest.json
+tests/            lab.test.js
 ```
 
-## Thêm thí nghiệm mới
+## Thêm phản ứng / khối hàm mới
 
-Thêm một object vào mảng scenario tương ứng:
-
-```js
-{
-  id: "phys-vi-du",
-  subject: "physics",
-  title: "Tên thí nghiệm",
-  subtitle: "Mô tả ngắn",
-  formula: "F = ma",
-  tags: ["cơ học"],
-  theory: "Giải thích lý thuyết…",
-  inputs: [{ key: "m", label: "Khối lượng", unit: "kg", min: 1, max: 10, step: 0.5, default: 2 }],
-  compute: (v) => ({ metrics: [], series: [] }),
-  draw: (scene) => {},
-  explain: (v, r) => "",
-}
-```
-
-Bộ test sẽ tự động kiểm tra thí nghiệm mới (thông số hợp lệ, compute chạy ở mọi biên, có metrics và series).
+- Phản ứng: thêm object vào `REACTIONS` trong `src/lab/chem/reactions.js` (chat tham chiếu theo `id` trong `SUBSTANCES`) — bộ test tự kiểm tra tính nhất quán.
+- Khối hàm: thêm object vào `BLOCK_TYPES` trong `src/lab/math/blocks.js` (có `params`, `fn(params) => x => y`, `formula(params)` hiển thị).
 
 ## Triển khai
 
-`vite.config.js` dùng `base: "./"` nên thư mục `dist/` có thể đặt trực tiếp lên GitHub Pages, Netlify, Vercel hay bất kỳ static host nào.
+`vite.config.js` dùng `base: "./"` — thư mục `dist/` đặt được lên GitHub Pages, Netlify, Vercel hay bất kỳ static host nào. CI (`.github/workflows/ci.yml`) chạy test + build cho mỗi commit/PR vào main.
