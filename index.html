@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="theme-color" content="#0f172a" />
+		<meta
+			name="description"
+			content="SciLab Studio — tự tạo thí nghiệm Hóa và xây hàm số: chọn chất thật, cộng các khối hàm, xem mô phỏng và đồ thị trực tiếp trên trình duyệt."
+		/>
+		<meta property="og:title" content="SciLab Studio · Tự tạo thí nghiệm" />
+		<meta
+			property="og:description"
+			content="Chọn chất hóa học thật vào cốc, cộng các khối hàm số, xem mô phỏng và đồ thị trực tiếp trên trình duyệt."
+		/>
+		<meta property="og:type" content="website" />
+		<meta name="twitter:card" content="summary" />
+		<title>SciLab Studio · Tự tạo thí nghiệm</title>
+		<link rel="icon" href="./icon.svg" type="image/svg+xml" />
+		<link rel="manifest" href="./manifest.webmanifest" />
+		<script type="module" crossorigin src="./assets/index-CwaISU2S.js"></script>
+		<link rel="stylesheet" crossorigin href="./assets/index-DlCsM7zl.css">
+	</head>
+	<body>
+		<script>
+			/* Chong nhay theme: ap dung theme da luu truoc khi React mount. */
+			try {
+				var saved = JSON.parse(localStorage.getItem("scilab:studio:v3") || "{}")
+				if (saved.theme === "light") document.documentElement.classList.remove("dark")
+				else document.documentElement.classList.add("dark")
+				document.documentElement.style.colorScheme = saved.theme === "light" ? "light" : "dark"
+			} catch (e) {
+				document.documentElement.classList.add("dark")
+			}
+		</script>
+		<div id="root"></div>
+	</body>
+</html>
